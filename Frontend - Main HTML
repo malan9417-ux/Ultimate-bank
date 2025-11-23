@@ -1,0 +1,254 @@
+<!-- frontend/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureBank Online - Internet Banking</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-university"></i>
+                <span>SecureBank</span>
+            </div>
+            <div class="nav-links" id="navLinks">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#accounts" class="nav-link">Accounts</a>
+                <a href="#transfer" class="nav-link">Transfer</a>
+                <a href="#billpay" class="nav-link">Bill Pay</a>
+                <a href="#profile" class="nav-link">Profile</a>
+                <div class="auth-buttons">
+                    <button id="loginBtn" class="btn btn-outline">Login</button>
+                    <button id="registerBtn" class="btn btn-primary">Enroll</button>
+                </div>
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <span id="userName"></span>
+                    <button id="logoutBtn" class="btn btn-outline">Logout</button>
+                </div>
+            </div>
+            <button class="nav-toggle" id="navToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Page -->
+        <section id="home" class="page active">
+            <div class="hero-section">
+                <div class="hero-content">
+                    <h1>Welcome to SecureBank Online</h1>
+                    <p>Your trusted partner in digital banking. Manage your finances securely from anywhere, anytime.</p>
+                    <div class="hero-features">
+                        <div class="feature">
+                            <i class="fas fa-shield-alt"></i>
+                            <h3>Secure</h3>
+                            <p>Bank-level encryption</p>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-mobile-alt"></i>
+                            <h3>Convenient</h3>
+                            <p>24/7 access</p>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-bolt"></i>
+                            <h3>Fast</h3>
+                            <p>Instant transfers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <h2>Quick Actions</h2>
+                <div class="action-grid">
+                    <div class="action-card" data-page="accounts">
+                        <i class="fas fa-wallet"></i>
+                        <span>View Accounts</span>
+                    </div>
+                    <div class="action-card" data-page="transfer">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>Transfer Funds</span>
+                    </div>
+                    <div class="action-card" data-page="billpay">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Pay Bills</span>
+                    </div>
+                    <div class="action-card" data-page="profile">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Profile Settings</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Accounts Page -->
+        <section id="accounts" class="page">
+            <div class="page-header">
+                <h2>My Accounts</h2>
+                <p>View your account balances and transaction history</p>
+            </div>
+            <div class="accounts-container" id="accountsContainer">
+                <!-- Accounts will be loaded here -->
+            </div>
+            <div class="transactions-container" id="transactionsContainer">
+                <!-- Transactions will be loaded here -->
+            </div>
+        </section>
+
+        <!-- Transfer Page -->
+        <section id="transfer" class="page">
+            <div class="page-header">
+                <h2>Transfer Funds</h2>
+                <p>Move money between your accounts or send to others</p>
+            </div>
+            <div class="transfer-form-container">
+                <form id="transferForm" class="banking-form">
+                    <div class="form-group">
+                        <label for="fromAccount">From Account</label>
+                        <select id="fromAccount" required>
+                            <option value="">Select account</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="toAccount">To Account Number</label>
+                        <input type="text" id="toAccount" placeholder="Enter account number" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transferAmount">Amount</label>
+                        <input type="number" id="transferAmount" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="transferDescription">Description</label>
+                        <input type="text" id="transferDescription" placeholder="Enter description" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-large">Transfer Funds</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Bill Pay Page -->
+        <section id="billpay" class="page">
+            <div class="page-header">
+                <h2>Bill Pay</h2>
+                <p>Manage and pay your bills online</p>
+            </div>
+            <div class="bills-container">
+                <div class="bills-list" id="billsList">
+                    <!-- Bills will be loaded here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Profile Page -->
+        <section id="profile" class="page">
+            <div class="page-header">
+                <h2>Profile Settings</h2>
+                <p>Manage your personal information and preferences</p>
+            </div>
+            <div class="profile-container">
+                <form id="profileForm" class="banking-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <textarea id="address" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Profile</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- Auth Modals -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Login to SecureBank</h2>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Login</button>
+            </form>
+            <p class="auth-switch">Don't have an account? <a href="#" id="showRegister">Enroll now</a></p>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Enroll in Online Banking</h2>
+            <form id="registerForm" class="auth-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="regFirstName">First Name</label>
+                        <input type="text" id="regFirstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="regLastName">Last Name</label>
+                        <input type="text" id="regLastName" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="regEmail">Email</label>
+                    <input type="email" id="regEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPhone">Phone</label>
+                    <input type="tel" id="regPhone" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+            </form>
+            <p class="auth-switch">Already have an account? <a href="#" id="showLogin">Login here</a></p>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Notification System -->
+    <div id="notification" class="notification"></div>
+
+    <script src="scripts/auth.js"></script>
+    <script src="scripts/accounts.js"></script>
+    <script src="scripts/transactions.js"></script>
+    <script src="scripts/transfer.js"></script>
+    <script src="scripts/bills.js"></script>
+    <script src="scripts/profile.js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>
