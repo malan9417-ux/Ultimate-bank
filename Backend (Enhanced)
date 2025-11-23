@@ -1,0 +1,436 @@
+// backend/server.js
+const express = require('express');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const path = require('path');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+const JWT_SECRET = 'your-secret-key-change-in-production';
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static('../frontend'));
+
+// Mock database
+let users = [
+    {
+        id: 1,
+        email: 'user@example.com',
+        password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
+        firstName: 'John',
+        lastName: 'Doe',
+        phone: '+1234567890',
+        address: '123 Main St, City, State 12345',
+        createdAt: '2024-01-01'
+    }
+];
+
+let accounts = [
+    {
+        id: 1,
+        userId: 1,
+        accountNumber: '1234567890',
+        routingNumber: '021000021',
+        balance: 12500.50,
+        type: 'checking',
+        name: 'Primary Checking',
+        currency: 'USD',
+        status: 'active'
+    },
+    {
+        id: 2,
+        userId: 1,
+        accountNumber: '0987654321',
+        routingNumber: '021000021',
+        balance: 25500.75,
+        type: 'savings',
+        name: 'High-Yield Savings',
+        currency: 'USD',
+        status: 'active'
+    },
+    {
+        id: 3,
+        userId: 1,
+        accountNumber: '5678901234',
+        routingNumber: '021000021',
+        balance: 5000.00,
+        type: 'investment',
+        name: 'Investment Account',
+        currency: 'USD',
+        status: 'active'
+    }
+];
+
+let transactions = [
+    {
+        id: 1,
+        accountId: 1,
+        type: 'deposit',
+        amount: 1000.00,
+        description: 'Initial deposit',
+        date: '2024-01-15T10:30:00Z',
+        balance: 1000.00,
+        status: 'completed',
+        category: 'deposit'
+    },
+    {
+        id: 2,
+        accountId: 1,
+        type: 'withdrawal',
+        amount: 250.00,
+        description: 'ATM Withdrawal',
+        date: '2024-01-20T14:22:00Z',
+        balance: 750.00,
+        status: 'completed',
+        category: 'withdrawal'
+    },
+    {
+        id: 3,
+        accountId: 2,
+        type: 'deposit',
+        amount: 5000.00,
+        description: 'Transfer from Checking',
+        date: '2024-01-25T09:15:00Z',
+        balance: 5000.00,
+        status: 'completed',
+        category: 'transfer'
+    }
+];
+
+let bills = [
+    {
+        id: 1,
+        userId: 1,
+        payee: 'Electric Company',
+        accountNumber: 'ACC-789123',
+        amount: 125.75,
+        dueDate: '2024-02-15',
+        frequency: 'monthly',
+        status: 'pending'
+    },
+    {
+        id: 2,
+        userId: 1,
+        payee: 'Internet Provider',
+        accountNumber: 'ACC-456789',
+        amount: 89.99,
+        dueDate: '2024-02-10',
+        frequency: 'monthly',
+        status: 'pending'
+    }
+];
+
+// Middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// Serve main page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
+// Auth Routes
+app.post('/api/register', async (req, res) => {
+    try {
+        const { email, password, firstName, lastName, phone } = req.body;
+        
+        const existingUser = users.find(user => user.email === email);
+        if (existingUser) {
+            return res.status(400).json({ error: 'User already exists' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = {
+            id: users.length + 1,
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            phone,
+            address: '',
+            createdAt: new Date().toISOString()
+        };
+
+        users.push(newUser);
+
+        // Create default accounts
+        const defaultAccounts = [
+            {
+                id: accounts.length + 1,
+                userId: newUser.id,
+                accountNumber: Math.random().toString().slice(2, 12),
+                routingNumber: '021000021',
+                balance: 0,
+                type: 'checking',
+                name: 'Primary Checking',
+                currency: 'USD',
+                status: 'active'
+            },
+            {
+                id: accounts.length + 2,
+                userId: newUser.id,
+                accountNumber: Math.random().toString().slice(2, 12),
+                routingNumber: '021000021',
+                balance: 0,
+                type: 'savings',
+                name: 'Savings Account',
+                currency: 'USD',
+                status: 'active'
+            }
+        ];
+
+        accounts.push(...defaultAccounts);
+
+        res.status(201).json({ message: 'User created successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        const user = users.find(user => user.email === email);
+        if (!user) {
+            return res.status(400).json({ error: 'Invalid credentials' });
+        }
+
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) {
+            return res.status(400).json({ error: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign(
+            { 
+                id: user.id, 
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName
+            },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phone: user.phone,
+                address: user.address
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Account Routes
+app.get('/api/accounts', authenticateToken, (req, res) => {
+    const userAccounts = accounts.filter(account => account.userId === req.user.id);
+    res.json(userAccounts);
+});
+
+app.get('/api/accounts/:id', authenticateToken, (req, res) => {
+    const account = accounts.find(
+        acc => acc.id === parseInt(req.params.id) && acc.userId === req.user.id
+    );
+    
+    if (!account) {
+        return res.status(404).json({ error: 'Account not found' });
+    }
+
+    res.json(account);
+});
+
+// Transaction Routes
+app.get('/api/transactions', authenticateToken, (req, res) => {
+    const userAccounts = accounts.filter(acc => acc.userId === req.user.id);
+    const accountIds = userAccounts.map(acc => acc.id);
+    const userTransactions = transactions.filter(
+        transaction => accountIds.includes(transaction.accountId)
+    ).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json(userTransactions);
+});
+
+app.get('/api/transactions/:accountId', authenticateToken, (req, res) => {
+    const { accountId } = req.params;
+    const account = accounts.find(acc => acc.id === parseInt(accountId) && acc.userId === req.user.id);
+    
+    if (!account) {
+        return res.status(404).json({ error: 'Account not found' });
+    }
+
+    const accountTransactions = transactions.filter(
+        transaction => transaction.accountId === parseInt(accountId)
+    ).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json(accountTransactions);
+});
+
+// Transfer Routes
+app.post('/api/transfer', authenticateToken, (req, res) => {
+    try {
+        const { fromAccountId, toAccountNumber, amount, description } = req.body;
+        
+        const fromAccount = accounts.find(
+            acc => acc.id === parseInt(fromAccountId) && acc.userId === req.user.id
+        );
+        
+        const toAccount = accounts.find(acc => acc.accountNumber === toAccountNumber);
+        
+        if (!fromAccount || !toAccount) {
+            return res.status(404).json({ error: 'Account not found' });
+        }
+
+        if (fromAccount.balance < parseFloat(amount)) {
+            return res.status(400).json({ error: 'Insufficient funds' });
+        }
+
+        // Update balances
+        fromAccount.balance -= parseFloat(amount);
+        toAccount.balance += parseFloat(amount);
+
+        // Record transactions
+        const withdrawalTransaction = {
+            id: transactions.length + 1,
+            accountId: fromAccount.id,
+            type: 'withdrawal',
+            amount: parseFloat(amount),
+            description: `Transfer to ${toAccountNumber} - ${description}`,
+            date: new Date().toISOString(),
+            balance: fromAccount.balance,
+            status: 'completed',
+            category: 'transfer'
+        };
+
+        const depositTransaction = {
+            id: transactions.length + 2,
+            accountId: toAccount.id,
+            type: 'deposit',
+            amount: parseFloat(amount),
+            description: `Transfer from ${fromAccount.accountNumber} - ${description}`,
+            date: new Date().toISOString(),
+            balance: toAccount.balance,
+            status: 'completed',
+            category: 'transfer'
+        };
+
+        transactions.push(withdrawalTransaction, depositTransaction);
+
+        res.json({ 
+            message: 'Transfer successful',
+            transactionId: withdrawalTransaction.id,
+            newBalance: fromAccount.balance
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Bill Pay Routes
+app.get('/api/bills', authenticateToken, (req, res) => {
+    const userBills = bills.filter(bill => bill.userId === req.user.id);
+    res.json(userBills);
+});
+
+app.post('/api/bills/pay', authenticateToken, (req, res) => {
+    try {
+        const { billId, fromAccountId } = req.body;
+        
+        const bill = bills.find(b => b.id === parseInt(billId) && b.userId === req.user.id);
+        const account = accounts.find(acc => acc.id === parseInt(fromAccountId) && acc.userId === req.user.id);
+        
+        if (!bill || !account) {
+            return res.status(404).json({ error: 'Bill or account not found' });
+        }
+
+        if (account.balance < bill.amount) {
+            return res.status(400).json({ error: 'Insufficient funds' });
+        }
+
+        // Process payment
+        account.balance -= bill.amount;
+        bill.status = 'paid';
+        bill.paidDate = new Date().toISOString();
+
+        // Record transaction
+        const transaction = {
+            id: transactions.length + 1,
+            accountId: account.id,
+            type: 'withdrawal',
+            amount: bill.amount,
+            description: `Bill Payment - ${bill.payee}`,
+            date: new Date().toISOString(),
+            balance: account.balance,
+            status: 'completed',
+            category: 'bill-payment'
+        };
+
+        transactions.push(transaction);
+
+        res.json({ 
+            message: 'Payment successful',
+            transactionId: transaction.id,
+            newBalance: account.balance
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// User Profile Routes
+app.get('/api/profile', authenticateToken, (req, res) => {
+    const user = users.find(u => u.id === req.user.id);
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { password, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
+});
+
+app.put('/api/profile', authenticateToken, (req, res) => {
+    try {
+        const { firstName, lastName, phone, address } = req.body;
+        const user = users.find(u => u.id === req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        user.firstName = firstName || user.firstName;
+        user.lastName = lastName || user.lastName;
+        user.phone = phone || user.phone;
+        user.address = address || user.address;
+
+        res.json({ message: 'Profile updated successfully', user });
+    } catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Banking website server running on port ${PORT}`);
+    console.log(`Frontend: http://localhost:${PORT}`);
+});
